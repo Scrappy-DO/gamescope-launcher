@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Gamescope laucher
+Comment=launch gamescope with extra settings
+Exec=/opt/gamescope-launcher/gamescope_launcher
+Icon=gamescope-launcher
+Terminal=false
+Type=Application
+Categories=Game;
