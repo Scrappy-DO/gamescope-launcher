@@ -1,9 +1,169 @@
 use std::process::{Command, exit};
-use std::fmt;
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow,
     Fixed, SpinButton, Adjustment, CheckButton, Label,
     Entry, EntryBuffer, Button};
+
+#[derive(Clone)]
+struct MyApp{
+    // title
+    res_title: Label,
+
+    //resolution
+    res_x: SpinButton,
+    res_y: SpinButton,
+
+    res_text: Label,
+
+    //refresh rate
+    refresh_enable: CheckButton,
+    refresh_spin: SpinButton,
+
+    // other
+    select_fullscreen: CheckButton,
+    select_steam_intigration: CheckButton,
+    
+    //fsr
+    fsr_checkbox: CheckButton,
+    fsr_strengt: SpinButton,
+    fsr_render_res_text: Label,
+    fsr_render_text: Label,
+    fsr_render_x: SpinButton,
+    fsr_render_y: SpinButton,
+
+    // exec
+    exec_title: Label,
+    exec_entry: Entry,
+
+    launch_button: Button
+}
+
+impl MyApp {
+    fn new(
+        // title
+        res_title: Label,
+
+        //resolution
+        res_x: SpinButton,
+        res_y: SpinButton,
+
+        res_text: Label,
+
+        //refresh rate
+        refresh_enable: CheckButton,
+        refresh_spin: SpinButton,
+
+        // other
+        select_fullscreen: CheckButton,
+        select_steam_intigration: CheckButton,
+        
+        //fsr
+        fsr_checkbox: CheckButton,
+        fsr_strengt: SpinButton,
+        fsr_render_res_text: Label,
+        fsr_render_text: Label,
+        fsr_render_x: SpinButton,
+        fsr_render_y: SpinButton,
+
+        // exec
+        exec_title: Label,
+        exec_entry: Entry,
+
+        launch_button: Button
+    ) -> MyApp {
+        return MyApp{
+            res_title,
+            res_x,
+            res_y,
+            res_text,
+            refresh_enable,
+            refresh_spin,
+            select_fullscreen,
+            select_steam_intigration,
+            fsr_checkbox,
+            fsr_strengt,
+            fsr_render_res_text,
+            fsr_render_text,
+            fsr_render_x,
+            fsr_render_y,
+            exec_title,
+            exec_entry,
+            launch_button
+        };
+    }
+
+    fn launch_cb(&self, _: &Button){
+
+        let fsr_strengt = self.fsr_strengt.value_as_int().to_string();
+        let fsr_x = self.fsr_render_x.value_as_int().to_string();
+        let fsr_y = self.fsr_render_y.value_as_int().to_string();
+        let res_x = self.res_x.value_as_int().to_string();
+        let res_y = self.res_y.value_as_int().to_string();
+        let refresh_rate = self.refresh_spin.value_as_int().to_string();
+        let command = self.exec_entry.text().to_string();
+
+
+        let mut launch_args = vec![];
+
+        if self.select_steam_intigration.is_active(){
+            launch_args.push("-e");
+        }
+
+        if self.select_fullscreen.is_active() {
+            launch_args.push("-f");
+        }
+
+        if self.fsr_checkbox.is_active() {
+            launch_args.push("-F");
+            launch_args.push("fsr");
+
+            launch_args.push("--fsr-sharpness");
+            launch_args.push(&fsr_strengt);
+
+            launch_args.push("-w");
+            launch_args.push(&fsr_x);
+
+            launch_args.push("-h");
+            launch_args.push(&fsr_y);
+
+            launch_args.push("-W");
+            launch_args.push(&res_x);
+
+            launch_args.push("-H");
+            launch_args.push(&res_y);
+            
+        } else {
+            launch_args.push("-w");
+            launch_args.push(&res_x);
+
+            launch_args.push("-h");
+            launch_args.push(&res_y);
+        }
+
+        if self.refresh_enable.is_active() {
+            launch_args.push("-r");
+            launch_args.push(&refresh_rate);
+        }
+
+        launch_args.push("--");
+        for flag in command.split_whitespace() {
+            launch_args.push(flag)
+        }
+
+        
+        for arg in launch_args.clone() {
+            print!(" {}", arg);
+        }
+        println!("");
+
+        
+        let _ = Command::new("gamescope")
+            .args(launch_args)
+            .spawn();
+    
+        exit(0);
+    }
+}
 
 fn main() {
     let app: Application = Application::builder()
@@ -16,186 +176,57 @@ fn main() {
 
 
 fn build_ui(app: &Application){
-    // title
-    let res_title_text: Option<&str> = Some("Set resolution");
-    let res_title: Label = Label::new(res_title_text);
 
-    // resolution
-    let res_x: SpinButton = new_spin_button(0.0, 9999.0, 1920.0, 
-        1.0, 0, 120, 30);
-    let res_y: SpinButton = new_spin_button(0.0, 9999.0, 1080.0, 
-        1.0, 0, 120, 30);
-
-    let res_text_text: Option<&str> = Some("X");
-    let res_text: Label = Label::new(res_text_text);
-
-    // refresh rate
-    let refresh_enable: CheckButton = new_checkbox(false, "refresh rate: ");
-    let refresh_spin: SpinButton = new_spin_button(24.0, 999.0, 60.0,
-         1.0, 0, 110, 30);
-
-    // other checkbox
-    let select_fulscreen: CheckButton = new_checkbox(true, "fulscreen");
-    let select_steam_intigration: CheckButton = new_checkbox(true, "Steam intigration");
-    
-    // fsr
-    let fsr_checkbox: CheckButton = new_checkbox(false, "fsr");
-    let fsr_strengt: SpinButton = new_spin_button(0.0, 20.0, 5.0, 
-        1.0, 0, 100, 30);
-    
-    let fsr_render_resolution_text: Option<&str> = Some("render resolution (fsr only):");
-    let fsr_render_resolution: Label = Label::new(fsr_render_resolution_text);
-
-    let fsr_render_text_text: Option<&str> = Some("X");
-    let fsr_render_text: Label = Label::new(fsr_render_text_text);
-
-    let fsr_render_x: SpinButton = new_spin_button(0.0, 9999.0, 1477.0,
-         1.0, 0, 120, 30);
-    let fsr_render_y: SpinButton = new_spin_button(0.0, 9999.0, 831.0,
-        1.0, 0, 120, 30);
-
-    // exec
-    let exec_title_text: Option<&str> = Some("command or path to executable");
-    let exec_title: Label = Label::new(exec_title_text);
-
-    let exec_entry: Entry = new_entry("steam -gamepadui", 320, 30);
-
-    // launch button
-    let launch_button: Button = new_button("launch gamescope");
-
-    // arguments
-    let select_steam_intigration_copy = &select_steam_intigration;
-    let select_fulscreen_copy = &select_fulscreen;
-    let fsr_checkbox_copy = &fsr_checkbox;
-
-    let fsr_strengt_copy = &fsr_strengt;
-
-    let fsr_render_x_copy = &fsr_render_x;
-    let fsr_render_y_copy = &fsr_render_y;
-
-    let res_x_copy = &res_x;
-    let res_y_copy = &res_y;
-
-    let refresh_enable_copy = &refresh_enable;
-    let refresh_spin_copy = &refresh_spin;
-
-    let exec_entry_copy = &exec_entry;
-
-    let fulscreen = select_fulscreen_copy.is_active();
-    let steam_inigration = select_steam_intigration_copy.is_active();
-
-    let fsr = fsr_checkbox_copy.is_active();
-    let fsr_strengt_value = fsr_strengt_copy.value_as_int();
-    let fsr_res_x = fsr_render_x_copy.value_as_int();
-    let fsr_res_y = fsr_render_y_copy.value_as_int();
-
-    let res_x_value = res_x_copy.value_as_int();
-    let res_y_value = res_y_copy.value_as_int();
-
-    let refresh = refresh_enable_copy.is_active();
-    let refresh_rate = refresh_spin_copy.value_as_int();
-
-    let command = exec_entry_copy.text();
-
-    // arguments cast 2
-    let fsr_strengt_value = fsr_strengt_value.to_string();
-    let fsr_res_x = fsr_res_x.to_string();
-    let fsr_res_y = fsr_res_y.to_string();
-
-    let res_x_value = res_x_value.to_string();
-    let res_y_value = res_y_value.to_string();
-
-    let refresh_rate = refresh_rate.to_string();
-
-    let command = command.as_str().to_owned();
-    
-
-     
-    launch_button.connect_clicked(move |_|{
-        let mut launch_args = vec![];
-        
-        if steam_inigration{
-            launch_args.push("-e");
-        }
-
-        if fulscreen {
-            launch_args.push("-f");
-        }
-
-        if fsr {
-            launch_args.push("-F");
-            launch_args.push("fsr");
-
-            launch_args.push("--fsr-sharpness");
-            launch_args.push(&fsr_strengt_value);
-
-            launch_args.push("-w");
-            launch_args.push(&fsr_res_x);
-
-            launch_args.push("-h");
-            launch_args.push(&fsr_res_y);
-
-            launch_args.push("-W");
-            launch_args.push(&res_x_value);
-
-            launch_args.push("-H");
-            launch_args.push(&res_y_value);
-            
-        } else {
-            launch_args.push("-w");
-            launch_args.push(&res_x_value);
-
-            launch_args.push("-h");
-            launch_args.push(&res_y_value);        
-        }
-
-        if refresh {
-            launch_args.push("-r");
-            launch_args.push(&refresh_rate);
-        }
-
-        launch_args.push("--");
-        for flag in command.split_whitespace() {
-            launch_args.push(flag)
-        }
+    let my_app: MyApp = MyApp::new(
+        Label::new(Some("Set Resolution")), 
+        new_spin_button(0.0, 9999.0, 1920.0, 1.0, 0, 120, 30), 
+        new_spin_button(0.0, 9999.0, 1080.0, 1.0, 0, 120, 30), 
+        Label::new(Some("X")), 
+        new_checkbox(false, "refresh rate: "), 
+        new_spin_button(24.0, 999.0, 60.0, 1.0, 0, 110, 30), 
+        new_checkbox(true, "fulscreen"), 
+        new_checkbox(true, "Steam intigration"), 
+        new_checkbox(false, "fsr"), 
+        new_spin_button(0.0, 20.0, 5.0, 1.0, 0, 100, 30), 
+        Label::new(Some("render resolution (fsr only):")), 
+        Label::new(Some("X")), 
+        new_spin_button(0.0, 9999.0, 1477.0, 1.0, 0, 120, 30), 
+        new_spin_button(0.0, 9999.0, 831.0, 1.0, 0, 120, 30), 
+        Label::new(Some("command or path to executable")), 
+        new_entry("steam -gamepadui", 320, 30),
+        new_button("launch gamescope") 
+    );
 
 
-        for arg in launch_args.clone() {
-            print!(" {}", arg);
-        }
-
-        print!("\n");
-        let _ = Command::new("gamescope")
-            .args(launch_args)
-            .spawn();
-        
-        exit(0);
-     });
+    let my_app_ref = my_app.clone();
+    my_app.launch_button.connect_clicked(move |button|{
+        my_app_ref.launch_cb(button);
+    });
 
     // final window
     let fixed: Fixed = Fixed::new();
-    fixed.put(&res_title, 30.0, 30.0);
-    fixed.put(&res_x, 65.0, 60.0);
-    fixed.put(&res_text, 196.0, 67.0);
-    fixed.put(&res_y, 215.0, 60.0);
+    fixed.put(&my_app.res_title, 30.0, 30.0);
+    fixed.put(&my_app.res_x, 65.0, 60.0);
+    fixed.put(&my_app.res_text, 196.0, 67.0);
+    fixed.put(&my_app.res_y, 215.0, 60.0);
 
-    fixed.put(&refresh_enable, 30.0, 114.0);
-    fixed.put(&refresh_spin, 150.0, 110.0);
+    fixed.put(&my_app.refresh_enable, 30.0, 114.0);
+    fixed.put(&my_app.refresh_spin, 150.0, 110.0);
     
-    fixed.put(&select_fulscreen, 30.0, 143.0);
-    fixed.put(&select_steam_intigration, 30.0, 170.0);
+    fixed.put(&my_app.select_fullscreen, 30.0, 143.0);
+    fixed.put(&my_app.select_steam_intigration, 30.0, 170.0);
 
-    fixed.put(&fsr_checkbox, 30.0, 198.0);
-    fixed.put(&fsr_strengt, 100.0, 195.0);
-    fixed.put(&fsr_render_resolution, 30.0, 240.0);
-    fixed.put(&fsr_render_x, 65.0, 265.0);
-    fixed.put(&fsr_render_text, 196.0, 272.0);
-    fixed.put(&fsr_render_y, 215.0, 265.0);
+    fixed.put(&my_app.fsr_checkbox, 30.0, 198.0);
+    fixed.put(&my_app.fsr_strengt, 100.0, 195.0);
+    fixed.put(&my_app.fsr_render_res_text, 30.0, 240.0);
+    fixed.put(&my_app.fsr_render_x, 65.0, 265.0);
+    fixed.put(&my_app.fsr_render_text, 196.0, 272.0);
+    fixed.put(&my_app.fsr_render_y, 215.0, 265.0);
 
-    fixed.put(&exec_title, 30.0, 310.0);
-    fixed.put(&exec_entry, 40.0, 335.0);
+    fixed.put(&my_app.exec_title, 30.0, 310.0);
+    fixed.put(&my_app.exec_entry, 40.0, 335.0);
 
-    fixed.put(&launch_button, 110.0, 410.0);
+    fixed.put(&my_app.launch_button, 110.0, 410.0);
     
 
     let window: ApplicationWindow = ApplicationWindow::builder()
